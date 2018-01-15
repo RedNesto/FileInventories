@@ -4,7 +4,7 @@ plugins {
 
 import org.apache.tools.ant.filters.ReplaceTokens
 
-version '0.1'
+version '0.2'
 archivesBaseName = 'FileInventoriesExample'
 
 repositories {
