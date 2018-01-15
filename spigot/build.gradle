@@ -25,6 +25,8 @@ dependencies {
 }
 
 shadowJar {
+    dependsOn updateLicenses
+
     classifier = null
     archivesBaseName = 'FileInventories'
 
