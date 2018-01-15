@@ -30,6 +30,11 @@ public class EnchantmentDefinition {
     private EnchantmentType enchantment;
     private int level;
 
+    public EnchantmentDefinition(EnchantmentType enchantment, int level) {
+        this.enchantment = enchantment;
+        this.level = level;
+    }
+
     public EnchantmentType getEnchantment() {
         return enchantment;
     }

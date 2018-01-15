@@ -24,7 +24,6 @@
 package io.github.rednesto.fileinventories.impl;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.List;
 
 public class ItemDefinition {
@@ -40,9 +39,9 @@ public class ItemDefinition {
     @Nullable
     private Integer durability;
     @Nullable
-    private List<EnchantmentDefinition> enchantments = new ArrayList<>();
+    private List<EnchantmentDefinition> enchantments;
     @Nullable
-    private List<String> lore = new ArrayList<>();
+    private List<String> lore;
     private boolean hideAttributes;
 
     @Nullable
@@ -61,6 +60,8 @@ public class ItemDefinition {
                           @Nullable String material,
                           @Nullable Integer amount,
                           @Nullable Integer durability,
+                          List<EnchantmentDefinition> enchantments,
+                          List<String> lore,
                           boolean hideAttributes,
                           @Nullable String onInteractRightClickKey,
                           @Nullable String onInteractLeftClickKey,
@@ -72,6 +73,8 @@ public class ItemDefinition {
         this.material = material;
         this.amount = amount;
         this.durability = durability;
+        this.enchantments = enchantments;
+        this.lore = lore;
         this.hideAttributes = hideAttributes;
         this.onInteractRightClickKey = onInteractRightClickKey;
         this.onInteractLeftClickKey = onInteractLeftClickKey;

@@ -42,6 +42,8 @@ import org.spongepowered.api.event.item.inventory.ClickInventoryEvent;
 import org.spongepowered.api.event.item.inventory.InteractItemEvent;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.enchantment.Enchantment;
+import org.spongepowered.api.item.enchantment.EnchantmentType;
+import org.spongepowered.api.item.enchantment.EnchantmentTypes;
 import org.spongepowered.api.item.inventory.Inventory;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.property.InventoryDimension;
@@ -93,6 +95,21 @@ public class FileInventoriesServiceImpl implements FileInventoriesService {
                             child.getNode("type").getString(),
                             child.getNode("amount").getInt(1),
                             child.getNode("durability").getInt(1),
+                            child.getNode("enchantments").getChildrenList().stream()
+                                    .map(node -> {
+                                        try {
+                                            return new EnchantmentDefinition(
+                                                    (EnchantmentType) EnchantmentTypes.class.getField(node.getNode("type").getString()).get(null),
+                                                    node.getNode("level").getInt());
+                                        } catch (IllegalAccessException | NoSuchFieldException e) {
+                                            FileInventories.instance.getLogger().error("The EnchantmentType " + node.getNode("type").getString() + " does not exists");
+                                            throw new RuntimeException(e);
+                                        }
+                                    })
+                                    .collect(Collectors.toList()),
+                            child.getNode("lore").getChildrenList().stream()
+                                    .map(ConfigurationNode::getString)
+                                    .collect(Collectors.toList()),
                             child.getNode("hide_attributes").getBoolean(false),
                             child.getNode("on_interact_right_click").getString(),
                             child.getNode("on_interact_left_click").getString(),
