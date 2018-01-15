@@ -43,7 +43,11 @@ public class ItemDefinition {
     @Nullable
     private List<String> lore;
     private boolean hideAttributes;
-
+    private boolean hideEnchantments;
+    private boolean hideUnbreakable;
+    private boolean hideCanDestroy;
+    private boolean hideCanPlace;
+    private boolean hideMisc;
     @Nullable
     private String onInteractRightClickKey;
     @Nullable
@@ -63,6 +67,11 @@ public class ItemDefinition {
                           List<EnchantmentDefinition> enchantments,
                           List<String> lore,
                           boolean hideAttributes,
+                          boolean hideEnchantments,
+                          boolean hideUnbreakable,
+                          boolean hideCanDestroy,
+                          boolean hideCanPlace,
+                          boolean hideMisc,
                           @Nullable String onInteractRightClickKey,
                           @Nullable String onInteractLeftClickKey,
                           @Nullable String onInvRightKey,
@@ -76,6 +85,11 @@ public class ItemDefinition {
         this.enchantments = enchantments;
         this.lore = lore;
         this.hideAttributes = hideAttributes;
+        this.hideEnchantments = hideEnchantments;
+        this.hideUnbreakable = hideUnbreakable;
+        this.hideCanDestroy = hideCanDestroy;
+        this.hideCanPlace = hideCanPlace;
+        this.hideMisc = hideMisc;
         this.onInteractRightClickKey = onInteractRightClickKey;
         this.onInteractLeftClickKey = onInteractLeftClickKey;
         this.onInvRightKey = onInvRightKey;
@@ -144,5 +158,25 @@ public class ItemDefinition {
     @Nullable
     public String getOnInvLeftKey() {
         return onInvLeftKey;
+    }
+
+    public boolean hideEnchantments() {
+        return hideEnchantments;
+    }
+
+    public boolean hideUnbreakable() {
+        return hideUnbreakable;
+    }
+
+    public boolean hideCanDestroy() {
+        return hideCanDestroy;
+    }
+
+    public boolean hideCanPlace() {
+        return hideCanPlace;
+    }
+
+    public boolean hideMisc() {
+        return hideMisc;
     }
 }

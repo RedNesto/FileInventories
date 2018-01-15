@@ -111,6 +111,11 @@ public class FileInventoriesServiceImpl implements FileInventoriesService {
                                     .map(ConfigurationNode::getString)
                                     .collect(Collectors.toList()),
                             child.getNode("hide_attributes").getBoolean(false),
+                            child.getNode("hide_enchantments").getBoolean(false),
+                            child.getNode("hide_unbreakable").getBoolean(false),
+                            child.getNode("hide_can_destroy").getBoolean(false),
+                            child.getNode("hide_can_place").getBoolean(false),
+                            child.getNode("hide_misc").getBoolean(false),
                             child.getNode("on_interact_right_click").getString(),
                             child.getNode("on_interact_left_click").getString(),
                             child.getNode("on_right_click").getString(),
@@ -147,7 +152,6 @@ public class FileInventoriesServiceImpl implements FileInventoriesService {
 
         InventoryDefinition definition = this.inventories.get(id);
         Inventory inventory = Inventory.builder()
-                // TODO manage width too
                 .property(InventoryDimension.of(9, definition.getRows()))
                 .build(FileInventories.instance);
 
@@ -210,8 +214,12 @@ public class FileInventoriesServiceImpl implements FileInventoriesService {
         if(definition.getDurability() != null)
             builder.add(Keys.ITEM_DURABILITY, definition.getDurability());
 
-        // TODO add more HIDE_*
         builder.add(Keys.HIDE_ATTRIBUTES, definition.hideAttributes());
+        builder.add(Keys.HIDE_ENCHANTMENTS, definition.hideEnchantments());
+        builder.add(Keys.HIDE_UNBREAKABLE, definition.hideUnbreakable());
+        builder.add(Keys.HIDE_CAN_DESTROY, definition.hideCanDestroy());
+        builder.add(Keys.HIDE_CAN_PLACE, definition.hideCanPlace());
+        builder.add(Keys.HIDE_MISCELLANEOUS, definition.hideMisc());
 
         builder.itemData(new OnInteractRightClickData())
                 .itemData(new OnInteractLeftClickData())
