@@ -1,0 +1,53 @@
+/*
+
+# Gradle Wrapper
+
+!gradle/
+
+# Spigot
+
+!spigot/
+spigot/*
+
+!spigot/api/
+spigot/api/*
+!spigot/api/src/
+!spigot/api/build.gradle
+
+!spigot/example/
+spigot/example/*
+!spigot/example/src/
+!spigot/example/build.gradle
+
+!spigot/src/
+!spigot/build.gradle
+!spigot/gradle.properties
+
+# Sponge
+
+!sponge/
+sponge/*
+
+!sponge/api/
+sponge/api/*
+!sponge/api/src/
+!sponge/api/build.gradle
+
+!sponge/example/
+sponge/example/*
+!sponge/example/src/
+!sponge/example/build.gradle
+
+!sponge/src/
+!sponge/build.gradle
+!sponge/gradle.properties
+
+# Root
+
+!.gitignore
+!build.gradle
+!gradlew
+!gradlew.bat
+!LICENSE
+!README.md
+!settings.gradle

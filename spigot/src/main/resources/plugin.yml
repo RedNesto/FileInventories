@@ -1,0 +1,5 @@
+name: FileInventories
+version: @version@
+main: io.github.rednesto.fileinventories.FileInventories
+authors: [RedNesto]
+description: A plugin letting people design inventories in files

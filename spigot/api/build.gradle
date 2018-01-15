@@ -1,0 +1,30 @@
+plugins {
+    id 'net.minecrell.licenser'
+}
+
+version = pluginVersion
+
+repositories {
+    maven {
+        name = 'spigotmc-repo'
+        url = 'https://hub.spigotmc.org/nexus/content/groups/public/'
+    }
+    maven {
+        name = 'sonatype'
+        url = 'https://oss.sonatype.org/content/groups/public/'
+    }
+}
+
+dependencies {
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
+    compile 'org.spigotmc:spigot-api:1.8.8-R0.1-SNAPSHOT'
+}
+
+license {
+    header = rootProject.file('LICENSE')
+
+    include '**/*.java'
+
+    newLine = false
+}

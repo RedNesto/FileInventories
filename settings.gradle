@@ -1,0 +1,4 @@
+rootProject.name = 'FileInventories'
+
+include ':spigot:api', ':spigot', ':spigot:example', ':sponge:api', ':sponge', ':sponge:example'
+

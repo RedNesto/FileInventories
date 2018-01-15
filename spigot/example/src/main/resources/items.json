@@ -1,0 +1,26 @@
+[
+  {
+    "id": "test_item",
+    "type": "NETHER_STAR",
+    "displayname": "&cTest Star",
+    "amount": 16,
+    "enchantments": [
+      {
+        "enchantment": "DIG_SPEED",
+        "level": 3
+      }
+    ],
+    "lore": [
+      "Hello,",
+      "",
+      "I'm a",
+      "",
+      "Test Item"
+    ],
+    "hide_attribute": true,
+    "on_interact_right_click": "test_item_onrightinteract",
+    "on_interact_left_click": "test_item_onleftinteract",
+    "on_right_click": "test_item_onrightclick",
+    "on_left_click": "test_item_onleftclick"
+  }
+]

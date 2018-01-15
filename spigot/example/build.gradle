@@ -1,0 +1,37 @@
+plugins {
+    id 'net.minecrell.licenser'
+}
+
+import org.apache.tools.ant.filters.ReplaceTokens
+
+version '0.1'
+archivesBaseName = 'FileInventoriesExample'
+
+repositories {
+    maven {
+        name = 'spigotmc-repo'
+        url = 'https://hub.spigotmc.org/nexus/content/groups/public/'
+    }
+    maven {
+        name = 'sonatype'
+        url = 'https://oss.sonatype.org/content/groups/public/'
+    }
+}
+
+dependencies {
+    compile parent
+}
+
+processResources {
+    from(sourceSets.main.resources.srcDirs) {
+        filter ReplaceTokens, tokens: [version: version]
+    }
+}
+
+license {
+    header = rootProject.file('LICENSE')
+
+    include '**/*.java'
+
+    newLine = false
+}

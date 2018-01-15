@@ -1,0 +1,51 @@
+plugins {
+    id 'com.github.johnrengelman.shadow' version '2.0.2'
+    id 'net.minecrell.licenser' version '0.3'
+}
+
+version = pluginVersion
+
+repositories {
+    maven {
+        name = 'spigotmc-repo'
+        url = 'https://hub.spigotmc.org/nexus/content/groups/public/'
+    }
+    maven {
+        name = 'sonatype'
+        url = 'https://oss.sonatype.org/content/groups/public/'
+    }
+}
+
+dependencies {
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
+    compileOnly fileTree(dir: 'libs', include: '*.jar')
+
+    compile project('api')
+}
+
+shadowJar {
+    classifier = null
+    archivesBaseName = 'FileInventories'
+
+    dependencies {
+        include(project('api'))
+    }
+}
+
+
+import org.apache.tools.ant.filters.ReplaceTokens
+
+processResources {
+    from(sourceSets.main.resources.srcDirs) {
+        filter ReplaceTokens, tokens: [version: version]
+    }
+}
+
+license {
+    header = rootProject.file('LICENSE')
+
+    include '**/*.java'
+
+    newLine = false
+}

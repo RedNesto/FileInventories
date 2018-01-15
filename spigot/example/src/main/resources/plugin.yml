@@ -1,0 +1,5 @@
+name: FileInventoriesExample
+version: @version@
+main: io.github.rednesto.fileinventories.example.FileInventoriesExample
+authors: [RedNesto]
+depend: [FileInventories]

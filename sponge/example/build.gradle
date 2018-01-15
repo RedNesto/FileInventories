@@ -1,0 +1,21 @@
+plugins {
+    id 'org.spongepowered.plugin'
+    id 'net.minecrell.licenser'
+}
+
+version '0.1'
+archivesBaseName = 'FileInventoriesExample'
+
+dependencies {
+    compile parent
+}
+
+sponge.plugin.id = 'file-inv-example'
+
+license {
+    header = rootProject.file('LICENSE')
+
+    include '**/*.java'
+
+    newLine = false
+}

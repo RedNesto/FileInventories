@@ -1,0 +1,30 @@
+plugins {
+    id 'org.spongepowered.plugin' version '0.8.1'
+    id 'com.github.johnrengelman.shadow' version '2.0.2'
+    id 'net.minecrell.licenser' version '0.3'
+}
+
+version = pluginVersion
+
+dependencies {
+    compile project('api')
+}
+
+shadowJar {
+    classifier = null
+    archivesBaseName = 'FileInventories'
+
+    dependencies {
+        include(project('api'))
+    }
+}
+
+sponge.plugin.id = pluginId
+
+license {
+    header = rootProject.file('LICENSE')
+
+    include '**/*.java'
+
+    newLine = false
+}

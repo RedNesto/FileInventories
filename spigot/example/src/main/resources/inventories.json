@@ -1,0 +1,15 @@
+[
+  {
+    "id": "test_inv",
+    "rows": 3,
+    "items": [
+      {
+        "x": 0,
+        "y": 0,
+        "id": "test_item"
+      }
+    ],
+    "on_inv_right_click": "test_inv_oninvrightclick",
+    "on_inv_left_click": "test_inv_oninvleftclick"
+  }
+]
