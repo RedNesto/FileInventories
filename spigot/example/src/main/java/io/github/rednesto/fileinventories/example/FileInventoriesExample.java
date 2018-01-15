@@ -62,10 +62,12 @@ public class FileInventoriesExample extends JavaPlugin implements Listener {
             event.getWhoClicked().sendMessage("Left");
         });
 
-        FileInventories.getService().registerInvRightClickHandler("test_item_oninvrightclick", event -> {
+        FileInventories.getService().registerInvRightClickHandler("test_inv_oninvrightclick", event -> {
+            event.setCancelled(true);
             event.getWhoClicked().sendMessage("Inventory Right");
         });
-        FileInventories.getService().registerInvLeftClickHandler("test_item_oninvleftclick", event -> {
+        FileInventories.getService().registerInvLeftClickHandler("test_inv_oninvleftclick", event -> {
+            event.setCancelled(true);
             event.getWhoClicked().sendMessage("Inventory Left");
         });
 

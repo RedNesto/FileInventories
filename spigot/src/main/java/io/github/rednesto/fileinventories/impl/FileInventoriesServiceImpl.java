@@ -29,16 +29,13 @@ import io.github.rednesto.fileinventories.FileInventories;
 import io.github.rednesto.fileinventories.ItemStackBuilder;
 import io.github.rednesto.fileinventories.SkullBuilder;
 import io.github.rednesto.fileinventories.api.FileInventoriesService;
-import net.minecraft.server.v1_8_R3.NBTTagCompound;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
@@ -139,7 +136,7 @@ public class FileInventoriesServiceImpl implements FileInventoriesService, Liste
             builder.amount(definition.getAmount());
 
         if(definition.getDisplayname() != null)
-            builder.displayName(definition.getDisplayname());
+            builder.displayName(FileInventories.applyColorCodes(definition.getDisplayname()));
 
         if(definition.getEnchantments() != null) {
             for(EnchantmentDefinition enchantement : definition.getEnchantments()) {
@@ -148,7 +145,7 @@ public class FileInventoriesServiceImpl implements FileInventoriesService, Liste
         }
 
         if(definition.getLore() != null)
-            builder.lore((new ArrayList<>(definition.getLore()).toArray(new String[0])));
+            builder.lore((definition.getLore().stream().map(FileInventories::applyColorCodes).toArray(String[]::new)));
 
         if(definition.getDurability() != null)
             builder.durability(definition.getDurability().shortValue());
@@ -156,7 +153,7 @@ public class FileInventoriesServiceImpl implements FileInventoriesService, Liste
         if(definition.getFlags() != null)
             builder.itemFlags(definition.getFlags().stream().map(ItemFlag::valueOf).collect(Collectors.toList()).toArray(new ItemFlag[0]));
 
-        ItemStack result = addCustomString(builder.build(), "file_inv_id", definition.getId());
+        ItemStack result = FileInventories.adapter.addCustomString(builder.build(), "file_inv_id", definition.getId());
 
         if(definition.getOnCreateKey() != null && this.createHandlers.containsKey(definition.getOnCreateKey()))
             this.createHandlers.get(definition.getOnCreateKey()).accept(player, result);
@@ -208,20 +205,24 @@ public class FileInventoriesServiceImpl implements FileInventoriesService, Liste
     private void onInvClick(InventoryClickEvent event) {
         InventoryDefinition definition = this.inventoryCache.get(event.getWhoClicked().getUniqueId());
 
-        if(definition == null)
-            return;
-
         switch(event.getClick()) {
             case RIGHT:
             case SHIFT_RIGHT:
-                Consumer<InventoryClickEvent> invHandler = this.invRightClickHandlers.get(definition.getOnRightClickKey());
-                if(invHandler != null)
-                    invHandler.accept(event);
+                if(definition != null) {
+                    Consumer<InventoryClickEvent> invHandler = this.invRightClickHandlers.get(definition.getOnRightClickKey());
+                    if (invHandler != null)
+                        invHandler.accept(event);
+                }
 
                 if(event.getCurrentItem() == null || event.getCurrentItem().getType() == Material.AIR)
                     break;
 
-                Optional<String> itemId = getCustomString(event.getCurrentItem(), "file_inv_id");
+                if(FileInventories.adapter == null) {
+                    FileInventories.instance.getLogger().warning("FileInventories Adapter has not been loaded, maybe this version of Spigot is not supported.");
+                    break;
+                }
+
+                Optional<String> itemId = FileInventories.adapter.getCustomString(event.getCurrentItem(), "file_inv_id");
                 if(!itemId.isPresent())
                     break;
 
@@ -231,20 +232,45 @@ public class FileInventoriesServiceImpl implements FileInventoriesService, Liste
                 break;
             case LEFT:
             case SHIFT_LEFT:
-                invHandler = this.invLeftClickHandlers.get(definition.getOnLeftClickKey());
-                if(invHandler != null)
-                    invHandler.accept(event);
+                if(definition != null) {
+                    Consumer<InventoryClickEvent> invHandler = this.invLeftClickHandlers.get(definition.getOnLeftClickKey());
+                    if (invHandler != null)
+                        invHandler.accept(event);
+                }
 
                 if(event.getCurrentItem() == null || event.getCurrentItem().getType() == Material.AIR)
                     break;
 
-                itemId = getCustomString(event.getCurrentItem(), "file_inv_id");
+                if(FileInventories.adapter == null) {
+                    FileInventories.instance.getLogger().warning("FileInventories Adapter has not been loaded, maybe this version of Spigot is not supported.");
+                    break;
+                }
+
+                itemId = FileInventories.adapter.getCustomString(event.getCurrentItem(), "file_inv_id");
                 if(!itemId.isPresent())
                     break;
 
                 itemHandler = this.leftClickHandlers.get(this.items.get(itemId.get()).getOnLeftClickKey());
                 if(itemHandler != null)
                     itemHandler.accept(event);
+                break;
+            case WINDOW_BORDER_LEFT:
+                break;
+            case WINDOW_BORDER_RIGHT:
+                break;
+            case MIDDLE:
+                break;
+            case NUMBER_KEY:
+                break;
+            case DOUBLE_CLICK:
+                break;
+            case DROP:
+                break;
+            case CONTROL_DROP:
+                break;
+            case CREATIVE:
+                break;
+            case UNKNOWN:
                 break;
         }
     }
@@ -257,7 +283,12 @@ public class FileInventoriesServiceImpl implements FileInventoriesService, Liste
         switch(event.getAction()) {
             case RIGHT_CLICK_AIR:
             case RIGHT_CLICK_BLOCK:
-                Optional<String> itemId = getCustomString(event.getItem(), "file_inv_id");
+                if(FileInventories.adapter == null) {
+                    FileInventories.instance.getLogger().warning("FileInventories Adapter has not been loaded, maybe this version of Spigot is not supported.");
+                    break;
+                }
+
+                Optional<String> itemId = FileInventories.adapter.getCustomString(event.getItem(), "file_inv_id");
                 if(!itemId.isPresent())
                     break;
 
@@ -267,7 +298,12 @@ public class FileInventoriesServiceImpl implements FileInventoriesService, Liste
                 break;
             case LEFT_CLICK_AIR:
             case LEFT_CLICK_BLOCK:
-                itemId = getCustomString(event.getItem(), "file_inv_id");
+                if(FileInventories.adapter == null) {
+                    FileInventories.instance.getLogger().warning("FileInventories Adapter has not been loaded, maybe this version of Spigot is not supported.");
+                    break;
+                }
+
+                itemId = FileInventories.adapter.getCustomString(event.getItem(), "file_inv_id");
                 if(!itemId.isPresent())
                     break;
 
@@ -279,32 +315,7 @@ public class FileInventoriesServiceImpl implements FileInventoriesService, Liste
     }
 
     @EventHandler
-    private void onInvClose(InventoryCloseEvent event) {
-        this.inventoryCache.remove(event.getPlayer().getUniqueId());
-    }
-
-    @EventHandler
     private void onPlayerQuit(PlayerQuitEvent event) {
         this.inventoryCache.remove(event.getPlayer().getUniqueId());
-    }
-
-
-    // TODO proper multiversion support
-    private static ItemStack addCustomString(ItemStack itemStack, String key, String value) {
-        net.minecraft.server.v1_8_R3.ItemStack nms = CraftItemStack.asNMSCopy(itemStack);
-        if(!nms.hasTag())
-            nms.setTag(new NBTTagCompound());
-
-        nms.getTag().setString(key, value);
-
-        return CraftItemStack.asBukkitCopy(nms);
-    }
-
-    private static Optional<String> getCustomString(ItemStack itemStack, String key) {
-        net.minecraft.server.v1_8_R3.ItemStack nms = CraftItemStack.asNMSCopy(itemStack);
-        if(!nms.hasTag() || nms.getTag().getString(key).isEmpty())
-            return Optional.empty();
-
-        return Optional.of(nms.getTag().getString(key));
     }
 }
