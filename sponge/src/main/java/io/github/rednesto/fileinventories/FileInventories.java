@@ -50,7 +50,7 @@ import org.spongepowered.api.plugin.PluginContainer;
 @Plugin(
         id = "file-inventories",
         name = "FileInventories",
-        version = "0.1",
+        version = "0.2",
         description = "A library letting people design inventories in files",
         authors = {
                 "RedNesto"
