@@ -305,12 +305,16 @@ public class FileInventoriesServiceImpl implements FileInventoriesService {
 
     // TODO those two event listeners are workaround, waiting for Inventory.Builder#listener fix
     @Listener
-    public void onSecondaryInvClick(ClickInventoryEvent.Secondary event, @First(typeFilter = Player.class) Player player) {
+    public void onSecondaryInvClick(ClickInventoryEvent.Secondary event, @First Player player) {
         InventoryDefinition definition = this.inventoryCache.get(player.getUniqueId());
+
+        if(definition == null)
+            return;
+
         if(definition.getOnRightClickKey() != null)
             this.invRightClickHandlers.get(definition.getOnRightClickKey()).accept(event);
 
-        if(event.getTransactions().size() < 1)
+        if(event.getTransactions().size() > 0)
             return;
 
         Optional<String> key = event.getTransactions().get(0).getOriginal().get(FileInvKeys.ON_INV_RIGHT_CLICK);
@@ -319,12 +323,16 @@ public class FileInventoriesServiceImpl implements FileInventoriesService {
     }
 
     @Listener
-    public void onPrimaryInvClick(ClickInventoryEvent.Primary event, @First(typeFilter = Player.class) Player player) {
+    public void onPrimaryInvClick(ClickInventoryEvent.Primary event, @First Player player) {
         InventoryDefinition definition = this.inventoryCache.get(player.getUniqueId());
+
+        if(definition == null)
+            return;
+
         if(definition.getOnLeftClickKey() != null && this.invLeftClickHandlers.containsKey(definition.getOnLeftClickKey()))
             this.invLeftClickHandlers.get(definition.getOnLeftClickKey()).accept(event);
 
-        if(event.getTransactions().size() < 1)
+        if(event.getTransactions().size() > 0)
             return;
 
         Optional<String> key = event.getTransactions().get(0).getOriginal().get(FileInvKeys.ON_INV_LEFT_CLICK);
