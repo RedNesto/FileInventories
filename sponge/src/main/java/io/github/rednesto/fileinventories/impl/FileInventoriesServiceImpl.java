@@ -198,35 +198,56 @@ public class FileInventoriesServiceImpl implements FileInventoriesService {
         if(definition.getAmount() != null)
             builder.quantity(definition.getAmount());
 
+
+        if(definition.getOnInteractRightClickKey() != null)
+            builder.itemData(new OnInteractRightClickData());
+
+        if(definition.getOnInteractLeftClickKey() != null)
+            builder.itemData(new OnInteractLeftClickData());
+
+        if(definition.getOnInvRightKey() != null)
+            builder.itemData(new OnInvRightClickData());
+
+        if(definition.getOnInvLeftKey() != null)
+            builder.itemData(new OnInvLeftClickData());
+
+        ItemStack result = builder.build();
+
         if(definition.getDisplayname() != null)
             //noinspection deprecation
-            builder.add(Keys.DISPLAY_NAME, TextSerializers.FORMATTING_CODE.deserialize(definition.getDisplayname()));
+            result.offer(Keys.DISPLAY_NAME, TextSerializers.FORMATTING_CODE.deserialize(definition.getDisplayname()));
 
         if(definition.getEnchantments() != null) {
-            builder.add(Keys.ITEM_ENCHANTMENTS, definition.getEnchantments().stream()
+            result.offer(Keys.ITEM_ENCHANTMENTS, definition.getEnchantments().stream()
                     .map(def -> Enchantment.of(def.getEnchantment(), def.getLevel()))
                     .collect(Collectors.toList()));
         }
 
         if(definition.getLore() != null)
-            builder.add(Keys.ITEM_LORE, definition.getLore().stream().map(Text::of).collect(Collectors.toList()));
+            result.offer(Keys.ITEM_LORE, definition.getLore().stream().map(Text::of).collect(Collectors.toList()));
 
         if(definition.getDurability() != null)
-            builder.add(Keys.ITEM_DURABILITY, definition.getDurability());
+            result.offer(Keys.ITEM_DURABILITY, definition.getDurability());
 
-        builder.add(Keys.HIDE_ATTRIBUTES, definition.hideAttributes());
-        builder.add(Keys.HIDE_ENCHANTMENTS, definition.hideEnchantments());
-        builder.add(Keys.HIDE_UNBREAKABLE, definition.hideUnbreakable());
-        builder.add(Keys.HIDE_CAN_DESTROY, definition.hideCanDestroy());
-        builder.add(Keys.HIDE_CAN_PLACE, definition.hideCanPlace());
-        builder.add(Keys.HIDE_MISCELLANEOUS, definition.hideMisc());
 
-        builder.itemData(new OnInteractRightClickData())
-                .itemData(new OnInteractLeftClickData())
-                .itemData(new OnInvRightClickData())
-                .itemData(new OnInvLeftClickData());
+        if(definition.hideAttributes())
+            result.offer(Keys.HIDE_ATTRIBUTES, true);
 
-        ItemStack result = builder.build();
+        if(definition.hideEnchantments())
+            result.offer(Keys.HIDE_ENCHANTMENTS, true);
+
+        if(definition.hideUnbreakable())
+            result.offer(Keys.HIDE_UNBREAKABLE, true);
+
+        if(definition.hideCanDestroy())
+            result.offer(Keys.HIDE_CAN_DESTROY, true);
+
+        if(definition.hideCanPlace())
+            result.offer(Keys.HIDE_CAN_PLACE, true);
+
+        if(definition.hideMisc())
+            result.offer(Keys.HIDE_MISCELLANEOUS, true);
+
 
         if(definition.getOnInteractRightClickKey() != null)
             result.offer(FileInvKeys.ON_INTERACT_RIGHT_CLICK, definition.getOnInteractRightClickKey());
@@ -242,6 +263,7 @@ public class FileInventoriesServiceImpl implements FileInventoriesService {
 
         if(definition.getOnCreateKey() != null && this.createHandlers.containsKey(definition.getOnCreateKey()))
             this.createHandlers.get(definition.getOnCreateKey()).accept(player, result);
+
 
         return Optional.of(result);
     }
