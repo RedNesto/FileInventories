@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2017
+ * Copyright (c) 2017 RedNesto
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,18 +25,21 @@ package io.github.rednesto.fileinventories;
 
 import com.google.inject.Inject;
 import io.github.rednesto.fileinventories.api.FileInventoriesService;
-import io.github.rednesto.fileinventories.api.data.builder.OnInteractLeftClickDataManipulatorBuilder;
-import io.github.rednesto.fileinventories.api.data.builder.OnInteractRightClickDataManipulatorBuilder;
-import io.github.rednesto.fileinventories.api.data.builder.OnInvLeftClickDataManipulatorBuilder;
-import io.github.rednesto.fileinventories.api.data.builder.OnInvRightClickDataManipulatorBuilder;
-import io.github.rednesto.fileinventories.api.data.immutable.ImmutableOnInteractLeftClickData;
-import io.github.rednesto.fileinventories.api.data.immutable.ImmutableOnInteractRightClickData;
-import io.github.rednesto.fileinventories.api.data.immutable.ImmutableOnInvLeftClickData;
-import io.github.rednesto.fileinventories.api.data.immutable.ImmutableOnInvRightClickData;
-import io.github.rednesto.fileinventories.api.data.mutable.OnInteractLeftClickData;
-import io.github.rednesto.fileinventories.api.data.mutable.OnInteractRightClickData;
-import io.github.rednesto.fileinventories.api.data.mutable.OnInvLeftClickData;
-import io.github.rednesto.fileinventories.api.data.mutable.OnInvRightClickData;
+import io.github.rednesto.fileinventories.api.data.builder.OnInteractPrimaryClickDataManipulatorBuilder;
+import io.github.rednesto.fileinventories.api.data.builder.OnInteractSecondaryClickDataManipulatorBuilder;
+import io.github.rednesto.fileinventories.api.data.builder.OnInvPrimaryClickDataManipulatorBuilder;
+import io.github.rednesto.fileinventories.api.data.builder.OnInvMiddleClickDataManipulatorBuilder;
+import io.github.rednesto.fileinventories.api.data.builder.OnInvSecondaryClickDataManipulatorBuilder;
+import io.github.rednesto.fileinventories.api.data.immutable.ImmutableOnInteractPrimaryClickData;
+import io.github.rednesto.fileinventories.api.data.immutable.ImmutableOnInteractSecondaryClickData;
+import io.github.rednesto.fileinventories.api.data.immutable.ImmutableOnInvPrimaryClickData;
+import io.github.rednesto.fileinventories.api.data.immutable.ImmutableOnInvMiddleClickData;
+import io.github.rednesto.fileinventories.api.data.immutable.ImmutableOnInvSecondaryClickData;
+import io.github.rednesto.fileinventories.api.data.mutable.OnInteractPrimaryClickData;
+import io.github.rednesto.fileinventories.api.data.mutable.OnInteractSecondaryClickData;
+import io.github.rednesto.fileinventories.api.data.mutable.OnInvPrimaryClickData;
+import io.github.rednesto.fileinventories.api.data.mutable.OnInvMiddleClickData;
+import io.github.rednesto.fileinventories.api.data.mutable.OnInvSecondaryClickData;
 import io.github.rednesto.fileinventories.impl.FileInventoriesServiceImpl;
 import org.slf4j.Logger;
 import org.spongepowered.api.Sponge;
@@ -51,7 +54,7 @@ import org.spongepowered.api.plugin.PluginContainer;
         id = "file-inventories",
         name = "FileInventories",
         version = "0.2.2",
-        description = "A library letting people design inventories in files",
+        description = "A library letting people customize items and inventories in files",
         authors = {
                 "RedNesto"
         }
@@ -64,7 +67,7 @@ public class FileInventories {
     @Inject
     private PluginContainer container;
 
-    public static FileInventories instance;
+    private static FileInventories instance;
 
     @Listener
     public void onConstruct(GameConstructionEvent event) {
@@ -75,39 +78,48 @@ public class FileInventories {
     @Listener
     public void onPreInit(GamePreInitializationEvent event) {
         DataRegistration.builder()
-                .dataClass(OnInteractRightClickData.class)
-                .immutableClass(ImmutableOnInteractRightClickData.class)
-                .builder(new OnInteractRightClickDataManipulatorBuilder())
-                .manipulatorId("on_interact_right_click")
-                .dataName("OnInteractRightClick")
+                .dataClass(OnInteractSecondaryClickData.class)
+                .immutableClass(ImmutableOnInteractSecondaryClickData.class)
+                .builder(new OnInteractSecondaryClickDataManipulatorBuilder())
+                .manipulatorId("on_interact_secondary_click")
+                .dataName("OnInteractSecondaryClick")
                 .buildAndRegister(container);
 
         DataRegistration.builder()
-                .dataClass(OnInteractLeftClickData.class)
-                .immutableClass(ImmutableOnInteractLeftClickData.class)
-                .builder(new OnInteractLeftClickDataManipulatorBuilder())
-                .manipulatorId("on_interact_left_click")
-                .dataName("OnInteractLeftClick")
+                .dataClass(OnInteractPrimaryClickData.class)
+                .immutableClass(ImmutableOnInteractPrimaryClickData.class)
+                .builder(new OnInteractPrimaryClickDataManipulatorBuilder())
+                .manipulatorId("on_interact_primary_click")
+                .dataName("OnInteractPrimaryClick")
+                .buildAndRegister(container);
+
+
+        DataRegistration.builder()
+                .dataClass(OnInvSecondaryClickData.class)
+                .immutableClass(ImmutableOnInvSecondaryClickData.class)
+                .builder(new OnInvSecondaryClickDataManipulatorBuilder())
+                .manipulatorId("on_inv_secondary_click")
+                .dataName("OnInvSecondaryClick")
                 .buildAndRegister(container);
 
         DataRegistration.builder()
-                .dataClass(OnInvRightClickData.class)
-                .immutableClass(ImmutableOnInvRightClickData.class)
-                .builder(new OnInvRightClickDataManipulatorBuilder())
-                .manipulatorId("on_inv_right_click")
-                .dataName("OnInvRightClick")
+                .dataClass(OnInvPrimaryClickData.class)
+                .immutableClass(ImmutableOnInvPrimaryClickData.class)
+                .builder(new OnInvPrimaryClickDataManipulatorBuilder())
+                .manipulatorId("on_inv_primary_click")
+                .dataName("OnInvPrimaryClick")
                 .buildAndRegister(container);
 
         DataRegistration.builder()
-                .dataClass(OnInvLeftClickData.class)
-                .immutableClass(ImmutableOnInvLeftClickData.class)
-                .builder(new OnInvLeftClickDataManipulatorBuilder())
-                .manipulatorId("on_inv_left_click")
-                .dataName("OnInvLeftClick")
+                .dataClass(OnInvMiddleClickData.class)
+                .immutableClass(ImmutableOnInvMiddleClickData.class)
+                .builder(new OnInvMiddleClickDataManipulatorBuilder())
+                .manipulatorId("on_inv_middle_click")
+                .dataName("OnInvMiddleClick")
                 .buildAndRegister(container);
     }
 
-    public Logger getLogger() {
-        return logger;
+    public static FileInventories getInstance() {
+        return instance;
     }
 }

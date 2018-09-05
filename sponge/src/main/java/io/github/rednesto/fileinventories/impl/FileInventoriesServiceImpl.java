@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2017
+ * Copyright (c) 2017 RedNesto
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,37 +23,45 @@
  */
 package io.github.rednesto.fileinventories.impl;
 
+import com.google.common.reflect.TypeToken;
 import io.github.rednesto.fileinventories.FileInventories;
 import io.github.rednesto.fileinventories.api.FileInvKeys;
 import io.github.rednesto.fileinventories.api.FileInventoriesService;
-import io.github.rednesto.fileinventories.api.data.mutable.OnInteractLeftClickData;
-import io.github.rednesto.fileinventories.api.data.mutable.OnInteractRightClickData;
-import io.github.rednesto.fileinventories.api.data.mutable.OnInvLeftClickData;
-import io.github.rednesto.fileinventories.api.data.mutable.OnInvRightClickData;
+import io.github.rednesto.fileinventories.api.data.mutable.OnInteractPrimaryClickData;
+import io.github.rednesto.fileinventories.api.data.mutable.OnInteractSecondaryClickData;
+import io.github.rednesto.fileinventories.api.data.mutable.OnInvPrimaryClickData;
+import io.github.rednesto.fileinventories.api.data.mutable.OnInvMiddleClickData;
+import io.github.rednesto.fileinventories.api.data.mutable.OnInvSecondaryClickData;
+import io.github.rednesto.fileinventories.api.serialization.InventoryDefinition;
+import io.github.rednesto.fileinventories.api.serialization.ItemDefinition;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.gson.GsonConfigurationLoader;
+import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import org.spongepowered.api.Sponge;
+import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.action.InteractEvent;
 import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.item.inventory.ClickInventoryEvent;
 import org.spongepowered.api.event.item.inventory.InteractItemEvent;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.enchantment.Enchantment;
 import org.spongepowered.api.item.enchantment.EnchantmentType;
-import org.spongepowered.api.item.enchantment.EnchantmentTypes;
 import org.spongepowered.api.item.inventory.Inventory;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.property.InventoryDimension;
 import org.spongepowered.api.item.inventory.property.SlotPos;
+import org.spongepowered.api.item.inventory.query.QueryOperationTypes;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.serializer.TextSerializers;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -63,109 +71,116 @@ import java.util.stream.Collectors;
 
 public class FileInventoriesServiceImpl implements FileInventoriesService {
 
-    private Map<String, ItemDefinition> items = new HashMap<>();
-    private Map<String, InventoryDefinition> inventories = new HashMap<>();
+    private final Map<String, ItemDefinition> items = new HashMap<>();
+    private final Map<String, InventoryDefinition> inventories = new HashMap<>();
 
-    private Map<UUID, InventoryDefinition> inventoryCache = new HashMap<>();
+    private final Map<UUID, InventoryDefinition> inventoryCache = new HashMap<>();
 
-    private Map<String, Consumer<InteractEvent>> rightInteractHandlers = new HashMap<>();
-    private Map<String, Consumer<InteractEvent>> leftInteractHandlers = new HashMap<>();
-    private Map<String, Consumer<ClickInventoryEvent.Secondary>> rightClickHandlers = new HashMap<>();
-    private Map<String, Consumer<ClickInventoryEvent.Primary>> leftClickHandlers = new HashMap<>();
-    private Map<String, BiConsumer<Player, ItemStack>> createHandlers = new HashMap<>();
-    private Map<String, BiConsumer<Player, Inventory>> invCreateHandlers = new HashMap<>();
-    private Map<String, Consumer<ClickInventoryEvent.Secondary>> invRightClickHandlers = new HashMap<>();
-    private Map<String, Consumer<ClickInventoryEvent.Primary>> invLeftClickHandlers = new HashMap<>();
+    private final Map<String, Consumer<InteractItemEvent.Secondary>> secondaryInteractHandlers = new HashMap<>();
+    private final Map<String, Consumer<InteractItemEvent.Primary>> primaryInteractHandlers = new HashMap<>();
+    private final Map<String, Consumer<ClickInventoryEvent.Secondary>> secondaryClickHandlers = new HashMap<>();
+    private final Map<String, Consumer<ClickInventoryEvent.Primary>> primaryClickHandlers = new HashMap<>();
+    private final Map<String, Consumer<ClickInventoryEvent.Middle>> middleClickHandlers = new HashMap<>();
+    private final Map<String, BiConsumer<Player, ItemStack>> createHandlers = new HashMap<>();
+    private final Map<String, BiConsumer<Player, Inventory>> invCreateHandlers = new HashMap<>();
+    private final Map<String, Consumer<ClickInventoryEvent.Secondary>> invSecondaryClickHandlers = new HashMap<>();
+    private final Map<String, Consumer<ClickInventoryEvent.Primary>> invPrimaryClickHandlers = new HashMap<>();
+    private final Map<String, Consumer<ClickInventoryEvent.Middle>> invMiddleClickHandlers = new HashMap<>();
 
     public FileInventoriesServiceImpl() {
-        Sponge.getEventManager().registerListeners(FileInventories.instance, this);
+        Sponge.getEventManager().registerListeners(FileInventories.getInstance(), this);
     }
 
     @Override
-    public void load(LoadTarget target, Path file) throws IOException {
-        GsonConfigurationLoader loader = GsonConfigurationLoader.builder().setPath(file).build();
+    public void load(LoadTarget target, boolean recursive, Path... paths) throws IOException {
+        for (Path path : paths) {
+            if (Files.isDirectory(path)) {
+                List<Path> subPaths = Files.list(path).collect(Collectors.toList());
+                for (Path subPath : subPaths) {
+                    load(target, recursive, subPath);
+                }
+            } else {
+                loadFile(target, path);
+            }
+        }
+    }
+
+    private void loadFile(LoadTarget target, Path path) throws IOException {
+        GsonConfigurationLoader loader = GsonConfigurationLoader.builder().setPath(path).build();
         ConfigurationNode root = loader.load();
 
-        switch(target) {
-            case LOAD_ITEMS:
-                root.getChildrenList().forEach(child -> {
-                    items.put(child.getNode("id").getString(), new ItemDefinition(
-                            child.getNode("id").getString(),
-                            child.getNode("displayname").getString(),
-                            child.getNode("type").getString(),
-                            child.getNode("amount").getInt(1),
-                            child.getNode("durability").getInt(1),
-                            child.getNode("enchantments").getChildrenList().stream()
-                                    .map(node -> {
-                                        try {
-                                            return new EnchantmentDefinition(
-                                                    (EnchantmentType) EnchantmentTypes.class.getField(node.getNode("type").getString()).get(null),
-                                                    node.getNode("level").getInt());
-                                        } catch (IllegalAccessException | NoSuchFieldException e) {
-                                            FileInventories.instance.getLogger().error("The EnchantmentType " + node.getNode("type").getString() + " does not exists");
-                                            throw new RuntimeException(e);
-                                        }
-                                    })
-                                    .collect(Collectors.toList()),
-                            child.getNode("lore").getChildrenList().stream()
-                                    .map(ConfigurationNode::getString)
-                                    .collect(Collectors.toList()),
-                            child.getNode("hide_attributes").getBoolean(false),
-                            child.getNode("hide_enchantments").getBoolean(false),
-                            child.getNode("hide_unbreakable").getBoolean(false),
-                            child.getNode("hide_can_destroy").getBoolean(false),
-                            child.getNode("hide_can_place").getBoolean(false),
-                            child.getNode("hide_misc").getBoolean(false),
-                            child.getNode("on_interact_right_click").getString(),
-                            child.getNode("on_interact_left_click").getString(),
-                            child.getNode("on_right_click").getString(),
-                            child.getNode("on_left_click").getString(),
-                            child.getNode("on_create").getString()
-                    ));
-                });
+        switch (target) {
+            case ITEMS:
+                try {
+                    // @formatter:off
+                    List<ItemDefinition> items = root.getValue(new TypeToken<List<ItemDefinition>>() {}, Collections.emptyList());
+                    // @formatter:on
+
+                    for (ItemDefinition item : items)
+                        this.items.put(item.id, item);
+                } catch (ObjectMappingException e) {
+                    throw new IOException(e);
+                }
                 break;
-            case LOAD_INVS:
-                root.getChildrenList().forEach(child -> {
-                    inventories.put(child.getNode("id").getString(), new InventoryDefinition(
-                            child.getNode("id").getString(),
-                            child.getNode("title").getString(),
-                            child.getNode("rows").getInt(),
-                            child.getNode("items").getChildrenList().stream()
-                                    .map(node -> new SlotDefinition(
-                                            node.getNode("x").getInt(),
-                                            node.getNode("y").getInt(),
-                                            node.getNode("id").getString()))
-                                    .collect(Collectors.toList()),
-                            child.getNode("on_create").getString(),
-                            child.getNode("on_inv_right_click").getString(),
-                            child.getNode("on_inv_left_click").getString()
-                    ));
-                });
+            case INVENTORIES:
+                try {
+                    // @formatter:off
+                    List<InventoryDefinition> inventories = root.getValue(new TypeToken<List<InventoryDefinition>>() {}, Collections.emptyList());
+                    // @formatter:on
+
+                    for (InventoryDefinition inventory : inventories)
+                        this.inventories.put(inventory.id, inventory);
+                } catch (ObjectMappingException e) {
+                    throw new IOException(e);
+                }
                 break;
         }
     }
 
     @Override
     public Optional<Inventory> getInventory(String id, Player player) {
-        if(!this.inventories.containsKey(id))
+        InventoryDefinition definition = this.inventories.get(id);
+        if (definition == null)
             return Optional.empty();
 
-        InventoryDefinition definition = this.inventories.get(id);
-        Inventory inventory = Inventory.builder()
-                .property(InventoryDimension.of(9, definition.getRows()))
-                .build(FileInventories.instance);
+        if (definition.rows < 1)
+            throw new IllegalArgumentException("Inventory 'rows' cannot be lesser than 1. FileInventory id: " + definition.id);
 
-        definition.getItems().forEach(slotDefinition -> {
-            Optional<ItemStack> maybeItem = getItem(slotDefinition.getItem(), player);
-            if(!maybeItem.isPresent()) {
-                FileInventories.instance.getLogger().warn("File item with ID " + slotDefinition.getItem() + " has not been found");
-                return;
+        Inventory inventory = Inventory.builder()
+                .property(InventoryDimension.of(9, definition.rows))
+                .build(FileInventories.getInstance());
+
+        definition.items.forEach(slot -> {
+            if (slot.x < 0)
+                throw new IllegalArgumentException("Slot 'x' cannot be lesser than zero. FileInventory id: " + definition.id);
+
+            if (slot.y < 0)
+                throw new IllegalArgumentException("Slot 'y' cannot be lesser than zero. FileInventory id: " + definition.id);
+
+            ItemStack itemStack = null;
+            if (!slot.id.isEmpty()) {
+                Optional<ItemStack> maybeItem = getItem(slot.id, player);
+
+                if (!maybeItem.isPresent())
+                    throw new IllegalArgumentException("Unknown FileItem id: " + slot.id + ". FileInventory id: " + id);
+                itemStack = maybeItem.get();
+            } else if (!slot.type.isEmpty()) {
+                Optional<ItemType> maybeItemType = Sponge.getRegistry().getType(ItemType.class, slot.type);
+
+                if (!maybeItemType.isPresent())
+                    throw new IllegalArgumentException("Unknown item id: " + slot.type + ". FileInventory id: " + id);
+
+                itemStack = ItemStack.of(maybeItemType.get(), 1);
             }
-            inventory.query(SlotPos.of(slotDefinition.getX(), slotDefinition.getY())).set(maybeItem.get());
+
+            if (itemStack == null)
+                throw new NullPointerException("The slot ItemStack is null. This situation is impossible in normal conditions.");
+
+            inventory.query(QueryOperationTypes.INVENTORY_PROPERTY.of(SlotPos.of(slot.x, slot.y))).set(itemStack);
         });
 
-        if(definition.getOnCreateKey() != null && this.invCreateHandlers.containsKey(definition.getOnCreateKey()))
-            this.invCreateHandlers.get(definition.getOnCreateKey()).accept(player, inventory);
+        if (!definition.onCreateKey.isEmpty() && this.invCreateHandlers.containsKey(definition.onCreateKey))
+            this.invCreateHandlers.get(definition.onCreateKey).accept(player, inventory);
 
         this.inventoryCache.put(player.getUniqueId(), definition);
 
@@ -173,119 +188,150 @@ public class FileInventoriesServiceImpl implements FileInventoriesService {
     }
 
     @Override
-    public void openInventory(String id, Player player) {
-        getInventory(id, player).ifPresent(player::openInventory);
-    }
-
-    @Override
     public Optional<ItemStack> getItem(String id, Player player) {
-        if(!this.items.containsKey(id))
-            return Optional.empty();
-
         ItemDefinition definition = this.items.get(id);
+        if (definition == null)
+            return Optional.empty();
 
         ItemStack.Builder builder = ItemStack.builder();
 
-        if(definition.getMaterial() != null) {
-            Optional<ItemType> maybeType = Sponge.getRegistry().getType(ItemType.class, definition.getMaterial());
-            if(!maybeType.isPresent()) {
-                FileInventories.instance.getLogger().warn("ItemType " + definition.getMaterial() + " does not exists in Sponge registry");
-                return Optional.empty();
-            }
-            builder.itemType(maybeType.get());
-        }
+        if (definition.type.isEmpty())
+            throw new IllegalArgumentException("'type' is a required item property. FileItem id: " + id);
 
-        if(definition.getAmount() != null)
-            builder.quantity(definition.getAmount());
+        Optional<ItemType> maybeType = Sponge.getRegistry().getType(ItemType.class, definition.type);
+        if (!maybeType.isPresent())
+            throw new IllegalArgumentException("Unknown 'type' id: " + definition.type + ". FileItem id: " + id);
+
+        builder.itemType(maybeType.get());
+
+        if (definition.amount > 0)
+            builder.quantity(definition.amount);
 
 
-        if(definition.getOnInteractRightClickKey() != null)
-            builder.itemData(new OnInteractRightClickData());
+        if (!definition.onInteractPrimaryClickKey.isEmpty())
+            builder.itemData(new OnInteractSecondaryClickData());
 
-        if(definition.getOnInteractLeftClickKey() != null)
-            builder.itemData(new OnInteractLeftClickData());
+        if (!definition.onInteractPrimaryClickKey.isEmpty())
+            builder.itemData(new OnInteractPrimaryClickData());
 
-        if(definition.getOnInvRightKey() != null)
-            builder.itemData(new OnInvRightClickData());
 
-        if(definition.getOnInvLeftKey() != null)
-            builder.itemData(new OnInvLeftClickData());
+        if (!definition.onInvSecondaryClickKey.isEmpty())
+            builder.itemData(new OnInvSecondaryClickData());
+
+        if (!definition.onInvPrimaryClickKey.isEmpty())
+            builder.itemData(new OnInvPrimaryClickData());
+
+        if (!definition.onInvMiddleClickKey.isEmpty())
+            builder.itemData(new OnInvMiddleClickData());
 
         ItemStack result = builder.build();
 
-        if(definition.getDisplayname() != null)
-            //noinspection deprecation
-            result.offer(Keys.DISPLAY_NAME, TextSerializers.FORMATTING_CODE.deserialize(definition.getDisplayname()));
+        if (!definition.displayname.isEmpty())
+            result.offer(Keys.DISPLAY_NAME, TextSerializers.FORMATTING_CODE.deserialize(definition.displayname));
 
-        if(definition.getEnchantments() != null) {
-            result.offer(Keys.ITEM_ENCHANTMENTS, definition.getEnchantments().stream()
-                    .map(def -> Enchantment.of(def.getEnchantment(), def.getLevel()))
+        if (!definition.enchantments.isEmpty()) {
+            result.offer(Keys.ITEM_ENCHANTMENTS, definition.enchantments.stream()
+                    .map(enchantment -> {
+                        if (enchantment.type.isEmpty())
+                            throw new IllegalArgumentException("You must specify and ecnhantment id");
+
+                        EnchantmentType enchantmentType = Sponge.getRegistry().getType(EnchantmentType.class, enchantment.type).orElseThrow(() ->
+                                new IllegalArgumentException("Unknown enchantment id: " + enchantment.type + ". Item id: " + id));
+                        return Enchantment.of(
+                                enchantmentType,
+                                enchantment.level);
+                    })
                     .collect(Collectors.toList()));
         }
 
-        if(definition.getLore() != null)
-            result.offer(Keys.ITEM_LORE, definition.getLore().stream().map(Text::of).collect(Collectors.toList()));
+        if (!definition.lore.isEmpty())
+            result.offer(Keys.ITEM_LORE, definition.lore.stream().map(Text::of).collect(Collectors.toList()));
 
-        if(definition.getDurability() != null)
-            result.offer(Keys.ITEM_DURABILITY, definition.getDurability());
+        if (definition.durability > 0)
+            result.offer(Keys.ITEM_DURABILITY, definition.durability);
 
 
-        if(definition.hideAttributes())
+        if (definition.hideAttributes)
             result.offer(Keys.HIDE_ATTRIBUTES, true);
 
-        if(definition.hideEnchantments())
+        if (definition.hideEnchantments)
             result.offer(Keys.HIDE_ENCHANTMENTS, true);
 
-        if(definition.hideUnbreakable())
+        if (definition.hideUnbreakable)
             result.offer(Keys.HIDE_UNBREAKABLE, true);
 
-        if(definition.hideCanDestroy())
+        if (definition.hideCanDestroy)
             result.offer(Keys.HIDE_CAN_DESTROY, true);
 
-        if(definition.hideCanPlace())
+        if (definition.hideCanPlace)
             result.offer(Keys.HIDE_CAN_PLACE, true);
 
-        if(definition.hideMisc())
+        if (definition.hideMisc)
             result.offer(Keys.HIDE_MISCELLANEOUS, true);
 
 
-        if(definition.getOnInteractRightClickKey() != null)
-            result.offer(FileInvKeys.ON_INTERACT_RIGHT_CLICK, definition.getOnInteractRightClickKey());
+        if (!definition.breakableBlocks.isEmpty()) {
+            result.offer(Keys.BREAKABLE_BLOCK_TYPES, definition.breakableBlocks
+                    .stream()
+                    .map(blockId -> Sponge.getRegistry().getType(BlockType.class, blockId)
+                            .orElseThrow(() -> new IllegalArgumentException("Unknown block id: " + blockId + ". Item id: " + id)))
+                    .collect(Collectors.toSet()));
+        }
 
-        if(definition.getOnInteractLeftClickKey() != null)
-            result.offer(FileInvKeys.ON_INTERACT_LEFT_CLICK, definition.getOnInteractLeftClickKey());
+        if (!definition.placeableBlocks.isEmpty()) {
+            result.offer(Keys.PLACEABLE_BLOCKS, definition.placeableBlocks
+                    .stream()
+                    .map(blockId -> Sponge.getRegistry().getType(BlockType.class, blockId)
+                            .orElseThrow(() -> new IllegalArgumentException("Unknown block id: " + blockId + ". Item id: " + id)))
+                    .collect(Collectors.toSet()));
+        }
 
-        if(definition.getOnInvRightKey() != null)
-            result.offer(FileInvKeys.ON_INV_RIGHT_CLICK, definition.getOnInvRightKey());
 
-        if(definition.getOnInvLeftKey() != null)
-            result.offer(FileInvKeys.ON_INV_LEFT_CLICK, definition.getOnInvLeftKey());
+        if (!definition.onInteractSecondaryClickKey.isEmpty())
+            result.offer(FileInvKeys.ON_INTERACT_SECONDARY_CLICK, definition.onInteractSecondaryClickKey);
 
-        if(definition.getOnCreateKey() != null && this.createHandlers.containsKey(definition.getOnCreateKey()))
-            this.createHandlers.get(definition.getOnCreateKey()).accept(player, result);
+        if (!definition.onInteractPrimaryClickKey.isEmpty())
+            result.offer(FileInvKeys.ON_INTERACT_PRIMARY_CLICK, definition.onInteractPrimaryClickKey);
 
+
+        if (!definition.onInvSecondaryClickKey.isEmpty())
+            result.offer(FileInvKeys.ON_INV_SECONDARY_CLICK, definition.onInvSecondaryClickKey);
+
+        if (!definition.onInvPrimaryClickKey.isEmpty())
+            result.offer(FileInvKeys.ON_INV_PRIMARY_CLICK, definition.onInvPrimaryClickKey);
+
+        if (!definition.onInvMiddleClickKey.isEmpty())
+            result.offer(FileInvKeys.ON_INV_MIDDLE_CLICK, definition.onInvMiddleClickKey);
+
+        if (!definition.onCreateKey.isEmpty() && this.createHandlers.containsKey(definition.onCreateKey))
+            this.createHandlers.get(definition.onCreateKey).accept(player, result);
 
         return Optional.of(result);
     }
 
     @Override
-    public void registerRightInteractHandler(String id, Consumer<InteractEvent> handler) {
-        this.rightInteractHandlers.put(id, handler);
+    public void registerSecondaryInteractHandler(String id, Consumer<InteractItemEvent.Secondary> handler) {
+        this.secondaryInteractHandlers.put(id, handler);
     }
 
     @Override
-    public void registerLeftInteractHandler(String id, Consumer<InteractEvent> handler) {
-        this.leftInteractHandlers.put(id, handler);
+    public void registerPrimaryInteractHandler(String id, Consumer<InteractItemEvent.Primary> handler) {
+        this.primaryInteractHandlers.put(id, handler);
     }
 
     @Override
-    public void registerRightClickHandler(String id, Consumer<ClickInventoryEvent.Secondary> handler) {
-        this.rightClickHandlers.put(id, handler);
+    public void registerSecondaryClickHandler(String id, Consumer<ClickInventoryEvent.Secondary> handler) {
+        this.secondaryClickHandlers.put(id, handler);
     }
 
     @Override
-    public void registerLeftClickHandler(String id, Consumer<ClickInventoryEvent.Primary> handler) {
-        this.leftClickHandlers.put(id, handler);
+    public void registerPrimaryClickHandler(String id, Consumer<ClickInventoryEvent.Primary> handler) {
+        this.primaryClickHandlers.put(id, handler);
+    }
+
+    @Override
+    public void registerMiddleClickHandler(String id, Consumer<ClickInventoryEvent.Middle> handler) {
+        this.middleClickHandlers.put(id, handler);
     }
 
     @Override
@@ -299,66 +345,108 @@ public class FileInventoriesServiceImpl implements FileInventoriesService {
     }
 
     @Override
-    public void registerInvRightClickHandler(String id, Consumer<ClickInventoryEvent.Secondary> handler) {
-        this.invRightClickHandlers.put(id, handler);
+    public void registerInvSecondaryClickHandler(String id, Consumer<ClickInventoryEvent.Secondary> handler) {
+        this.invSecondaryClickHandlers.put(id, handler);
     }
 
     @Override
-    public void registerInvLeftClickHandler(String id, Consumer<ClickInventoryEvent.Primary> handler) {
-        this.invLeftClickHandlers.put(id, handler);
+    public void registerInvPrimaryClickHandler(String id, Consumer<ClickInventoryEvent.Primary> handler) {
+        this.invPrimaryClickHandlers.put(id, handler);
+    }
+
+    @Override
+    public void registerInvMiddleClickHandler(String id, Consumer<ClickInventoryEvent.Middle> handler) {
+        this.invMiddleClickHandlers.put(id, handler);
     }
 
 
     @Listener
-    public void onRightClick(InteractItemEvent.Secondary event) {
-        event.getItemStack().get(FileInvKeys.ON_INTERACT_RIGHT_CLICK).ifPresent(key -> {
-            if(rightInteractHandlers.containsKey(key))
-                rightInteractHandlers.get(key).accept(event);
+    public void onSecondaryClick(InteractItemEvent.Secondary event) {
+        event.getItemStack().get(FileInvKeys.ON_INTERACT_SECONDARY_CLICK).ifPresent(key -> {
+            if (secondaryInteractHandlers.containsKey(key))
+                secondaryInteractHandlers.get(key).accept(event);
         });
     }
 
     @Listener
-    public void onLeftClick(InteractItemEvent.Primary event) {
-        event.getItemStack().get(FileInvKeys.ON_INTERACT_LEFT_CLICK).ifPresent(key -> {
-            if(leftInteractHandlers.containsKey(key))
-                leftInteractHandlers.get(key).accept(event);
+    public void onPrimaryClick(InteractItemEvent.Primary event) {
+        event.getItemStack().get(FileInvKeys.ON_INTERACT_PRIMARY_CLICK).ifPresent(key -> {
+            if (primaryInteractHandlers.containsKey(key))
+                primaryInteractHandlers.get(key).accept(event);
         });
     }
+
 
     // TODO those two event listeners are workaround, waiting for Inventory.Builder#listener fix
     @Listener
     public void onSecondaryInvClick(ClickInventoryEvent.Secondary event, @First Player player) {
         InventoryDefinition definition = this.inventoryCache.get(player.getUniqueId());
 
-        if(definition == null)
+        if (definition == null)
             return;
 
-        if(definition.getOnRightClickKey() != null)
-            this.invRightClickHandlers.get(definition.getOnRightClickKey()).accept(event);
+        if (!definition.onSecondaryClickKey.isEmpty()) {
+            Consumer<ClickInventoryEvent.Secondary> eventConsumer = this.invSecondaryClickHandlers.get(definition.onSecondaryClickKey);
+            if (eventConsumer != null)
+                eventConsumer.accept(event);
+        }
 
-        if(event.getTransactions().size() > 0)
-            return;
+        event.getTransactions().forEach(transaction -> {
+            Optional<String> key = transaction.getOriginal().get(FileInvKeys.ON_INV_SECONDARY_CLICK);
 
-        Optional<String> key = event.getTransactions().get(0).getOriginal().get(FileInvKeys.ON_INV_RIGHT_CLICK);
-        if(key.isPresent() && this.rightClickHandlers.containsKey(key.get()))
-            this.rightClickHandlers.get(key.get()).accept(event);
+            if (key.isPresent()) {
+                Consumer<ClickInventoryEvent.Secondary> eventConsumer = this.secondaryClickHandlers.get(key.get());
+                if (eventConsumer != null)
+                    eventConsumer.accept(event);
+            }
+        });
     }
 
     @Listener
     public void onPrimaryInvClick(ClickInventoryEvent.Primary event, @First Player player) {
         InventoryDefinition definition = this.inventoryCache.get(player.getUniqueId());
 
-        if(definition == null)
+        if (definition == null)
             return;
 
-        if(definition.getOnLeftClickKey() != null && this.invLeftClickHandlers.containsKey(definition.getOnLeftClickKey()))
-            this.invLeftClickHandlers.get(definition.getOnLeftClickKey()).accept(event);
+        if (!definition.onPrimaryClickKey.isEmpty()) {
+            Consumer<ClickInventoryEvent.Primary> eventConsumer = this.invPrimaryClickHandlers.get(definition.onPrimaryClickKey);
+            if (eventConsumer != null)
+                eventConsumer.accept(event);
+        }
 
-        if(event.getTransactions().size() > 0)
+        event.getTransactions().forEach(transaction -> {
+            Optional<String> key = transaction.getOriginal().get(FileInvKeys.ON_INV_PRIMARY_CLICK);
+
+            if (key.isPresent()) {
+                Consumer<ClickInventoryEvent.Primary> eventConsumer = this.primaryClickHandlers.get(key.get());
+                if (eventConsumer != null)
+                    eventConsumer.accept(event);
+            }
+        });
+    }
+
+    @Listener
+    public void onMiddleInvClick(ClickInventoryEvent.Middle event, @First Player player) {
+        InventoryDefinition definition = this.inventoryCache.get(player.getUniqueId());
+
+        if (definition == null)
             return;
 
-        Optional<String> key = event.getTransactions().get(0).getOriginal().get(FileInvKeys.ON_INV_LEFT_CLICK);
-        if(key.isPresent() && this.leftClickHandlers.containsKey(key.get()))
-            this.leftClickHandlers.get(key.get()).accept(event);
+        if (!definition.onMiddleClickKey.isEmpty()) {
+            Consumer<ClickInventoryEvent.Middle> eventConsumer = this.invMiddleClickHandlers.get(definition.onMiddleClickKey);
+            if (eventConsumer != null)
+                eventConsumer.accept(event);
+        }
+
+        event.getTransactions().forEach(transaction -> {
+            Optional<String> key = transaction.getOriginal().get(FileInvKeys.ON_INV_MIDDLE_CLICK);
+
+            if (key.isPresent()) {
+                Consumer<ClickInventoryEvent.Middle> eventConsumer = this.middleClickHandlers.get(key.get());
+                if (eventConsumer != null)
+                    eventConsumer.accept(event);
+            }
+        });
     }
 }

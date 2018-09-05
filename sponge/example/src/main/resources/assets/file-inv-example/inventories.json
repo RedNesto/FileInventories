@@ -1,0 +1,21 @@
+[
+  {
+    "id": "test_inv",
+    "rows": 3,
+    "items": [
+      {
+        "x": 0,
+        "y": 0,
+        "id": "test_item"
+      },
+      {
+        "x": 0,
+        "y": 1,
+        "type": "minecraft:iron_ore"
+      }
+    ],
+    "on_inv_secondary_click": "test_inv_oninvsecondaryclick",
+    "on_inv_primary_click": "test_inv_oninvprimaryclick",
+    "on_inv_middle_click": "test_inv_oninvmiddleclick"
+  }
+]

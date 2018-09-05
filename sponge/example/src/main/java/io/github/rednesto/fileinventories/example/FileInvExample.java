@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2017
+ * Copyright (c) 2017 RedNesto
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,30 +26,27 @@ package io.github.rednesto.fileinventories.example;
 import io.github.rednesto.fileinventories.api.FileInventoriesService;
 import org.slf4j.Logger;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.command.CommandCallable;
+import org.spongepowered.api.asset.Asset;
+import org.spongepowered.api.asset.AssetManager;
 import org.spongepowered.api.command.CommandResult;
-import org.spongepowered.api.command.CommandSource;
+import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.GameInitializationEvent;
 import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
+import org.spongepowered.api.item.inventory.entity.Hotbar;
+import org.spongepowered.api.item.inventory.query.QueryOperationTypes;
 import org.spongepowered.api.plugin.Dependency;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.text.Text;
-import org.spongepowered.api.world.Location;
-import org.spongepowered.api.world.World;
 
-import javax.annotation.Nullable;
-import javax.inject.Inject;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
+
+import javax.inject.Inject;
 
 @Plugin(id = "file-inv-example",
         name = "File Inventories Example",
@@ -68,51 +65,65 @@ public class FileInvExample {
     public void onPreInit(GamePreInitializationEvent event) {
         Optional<FileInventoriesService> maybeService = Sponge.getServiceManager().provide(FileInventoriesService.class);
         if(!maybeService.isPresent()) {
-            logger.error("FileInventoriesService has not been provided! Please be sure you installed FileInventories and it has been loaded successfully.");
+            logger.error("FileInventoriesService was not provided! Please be sure you installed FileInventories and it has been loaded successfully.");
             return;
         }
 
         FileInventoriesService service = maybeService.get();
 
-        service.registerRightInteractHandler("test_item_onrightinteract", event1 -> event1.getCause().first(Player.class).ifPresent(player -> {
-            player.sendMessages(Text.of("Interact Right"));
+        service.registerSecondaryInteractHandler("test_item_onsecondaryinteract", event1 -> event1.getCause().first(Player.class).ifPresent(player -> {
+            player.sendMessages(Text.of("Interact Secondary"));
             service.openInventory("test_inv", player);
         }));
-        service.registerLeftInteractHandler("test_item_onleftinteract", event1 -> event1.getCause().first(Player.class).ifPresent(player -> {
-            player.sendMessages(Text.of("Interact Left"));
+        service.registerPrimaryInteractHandler("test_item_onprimaryinteract", event1 -> event1.getCause().first(Player.class).ifPresent(player -> {
+            player.sendMessages(Text.of("Interact Primary"));
             service.openInventory("test_inv", player);
         }));
 
-        service.registerRightClickHandler("test_item_onrightclick", event1 ->
-                event1.getCause().first(Player.class).ifPresent(player -> player.sendMessage(Text.of("Right"))));
-        service.registerLeftClickHandler("test_item_onleftclick", event1 ->
-                event1.getCause().first(Player.class).ifPresent(player -> player.sendMessage(Text.of("Left"))));
+        service.registerSecondaryClickHandler("test_item_onsecondaryclick", event1 ->
+                event1.getCause().first(Player.class).ifPresent(player -> player.sendMessage(Text.of("Secondary"))));
+        service.registerPrimaryClickHandler("test_item_onprimaryclick", event1 ->
+                event1.getCause().first(Player.class).ifPresent(player -> player.sendMessage(Text.of("Primary"))));
+        service.registerMiddleClickHandler("test_item_onmiddleclick", event1 ->
+                event1.getCause().first(Player.class).ifPresent(player -> player.sendMessage(Text.of("Middle"))));
 
-        service.registerInvRightClickHandler("test_inv_oninvrightclick", event1 -> {
+        service.registerInvSecondaryClickHandler("test_inv_oninvsecondaryclick", event1 -> {
             event1.setCancelled(true);
-            event1.getCause().first(Player.class).ifPresent(player -> player.sendMessages(Text.of("Inventory Right")));
+            event1.getCause().first(Player.class).ifPresent(player -> player.sendMessages(Text.of("Inventory Secondary")));
         });
-        service.registerInvLeftClickHandler("test_inv_oninvleftclick", event1 -> {
+        service.registerInvPrimaryClickHandler("test_inv_oninvprimaryclick", event1 -> {
             event1.setCancelled(true);
-            event1.getCause().first(Player.class).ifPresent(player -> player.sendMessages(Text.of("Inventory Left")));
+            event1.getCause().first(Player.class).ifPresent(player -> player.sendMessages(Text.of("Inventory Primary")));
+        });
+        service.registerInvMiddleClickHandler("test_inv_oninvmiddleclick", event1 -> {
+            event1.setCancelled(true);
+            event1.getCause().first(Player.class).ifPresent(player -> player.sendMessages(Text.of("Inventory Middle")));
         });
 
         try {
             Files.createDirectories(configDir);
 
-            // TODO replace it with the AssetManager when I figure out how to use it
-            File items = new File(configDir.toFile(), "items.json");
-            if(!items.exists()) {
-                Files.copy(getClass().getResourceAsStream("/items.json"), items.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            AssetManager assetManager = Sponge.getAssetManager();
+            Path itemsFile = configDir.resolve("items.json");
+            if (!Files.exists(itemsFile)) {
+                Optional<Asset> itemsAsset = assetManager.getAsset(this, itemsFile.getFileName().toString());
+                if (!itemsAsset.isPresent())
+                    throw new RuntimeException("The asset 'items.json' could not be found");
+
+                itemsAsset.get().copyToDirectory(configDir);
             }
 
-            File inventories = new File(configDir.toFile(), "inventories.json");
-            if(!inventories.exists()) {
-                Files.copy(getClass().getResourceAsStream("/inventories.json"), inventories.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            Path inventoriesFile = configDir.resolve("inventories.json");
+            if (!Files.exists(inventoriesFile)) {
+                Optional<Asset> inventoriesAsset = assetManager.getAsset(this, inventoriesFile.getFileName().toString());
+                if (!inventoriesAsset.isPresent())
+                    throw new RuntimeException("The asset 'inventories.json' could not be found");
+
+                inventoriesAsset.get().copyToDirectory(configDir);
             }
 
-            service.load(FileInventoriesService.LoadTarget.LOAD_ITEMS, items.toPath());
-            service.load(FileInventoriesService.LoadTarget.LOAD_INVS, inventories.toPath());
+            service.load(FileInventoriesService.LoadTarget.ITEMS, itemsFile);
+            service.load(FileInventoriesService.LoadTarget.INVENTORIES, inventoriesFile);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -120,42 +131,16 @@ public class FileInvExample {
 
     @Listener
     public void onInit(GameInitializationEvent event) {
-        Sponge.getCommandManager().register(this, new CommandCallable() {
-            @Override
-            public CommandResult process(CommandSource source, String arguments) {
-                if(!(source instanceof Player))
-                    return CommandResult.empty();
+        Sponge.getCommandManager().register(this, CommandSpec.builder().executor((src, args) -> {
+            if(!(src instanceof Player))
+                return CommandResult.empty();
 
-                Sponge.getServiceManager().provide(FileInventoriesService.class).ifPresent(service ->
-                        service.getItem("test_item", (Player) source).ifPresent(item -> ((Player) source).getInventory().set(item)));
+            Sponge.getServiceManager().provide(FileInventoriesService.class).ifPresent(service -> {
+                service.offerItem("test_item", (Player) src, ((Player) src).getInventory().query(QueryOperationTypes.INVENTORY_TYPE.of(Hotbar.class)));
+                service.offerItem("custom_shovel", (Player) src, ((Player) src).getInventory().query(QueryOperationTypes.INVENTORY_TYPE.of(Hotbar.class)));
+            });
 
-                return CommandResult.success();
-            }
-
-            @Override
-            public List<String> getSuggestions(CommandSource source, String arguments, @Nullable Location<World> targetPosition) {
-                return Collections.emptyList();
-            }
-
-            @Override
-            public boolean testPermission(CommandSource source) {
-                return true;
-            }
-
-            @Override
-            public Optional<Text> getShortDescription(CommandSource source) {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Text> getHelp(CommandSource source) {
-                return Optional.empty();
-            }
-
-            @Override
-            public Text getUsage(CommandSource source) {
-                return Text.of();
-            }
-        }, "exitem");
+            return CommandResult.success();
+        }).build(), "exitem");
     }
 }

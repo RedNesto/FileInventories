@@ -1,0 +1,41 @@
+[
+  {
+    "id": "test_item",
+    "type": "minecraft:nether_star",
+    "displayname": "&cTest Star",
+    "amount": 16,
+    "enchantments": [
+      {
+        "type": "minecraft:unbreaking",
+        "level": 3
+      }
+    ],
+    "lore": [
+      "Hello,",
+      "",
+      "I'm a",
+      "",
+      "Test Item"
+    ],
+    "hide_attribute": true,
+    "on_interact_secondary_click": "test_item_onsecondaryinteract",
+    "on_interact_primary_click": "test_item_onprimaryinteract",
+    "on_secondary_click": "test_item_onsecondaryclick",
+    "on_primary_click": "test_item_onprimaryclick",
+    "on_middle_click": "test_item_onmiddleclick"
+  },
+  {
+    "id": "custom_shovel",
+    "type": "minecraft:diamond_shovel",
+    "enchantments": [
+      {
+        "type": "minecraft:efficiency",
+        "level": 3
+      }
+    ],
+    "breakable_blocks": [
+      "minecraft:grass",
+      "minecraft:dirt"
+    ]
+  }
+]
