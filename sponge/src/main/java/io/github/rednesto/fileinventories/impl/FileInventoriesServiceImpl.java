@@ -29,8 +29,8 @@ import io.github.rednesto.fileinventories.api.FileInvKeys;
 import io.github.rednesto.fileinventories.api.FileInventoriesService;
 import io.github.rednesto.fileinventories.api.data.mutable.OnInteractPrimaryClickData;
 import io.github.rednesto.fileinventories.api.data.mutable.OnInteractSecondaryClickData;
-import io.github.rednesto.fileinventories.api.data.mutable.OnInvPrimaryClickData;
 import io.github.rednesto.fileinventories.api.data.mutable.OnInvMiddleClickData;
+import io.github.rednesto.fileinventories.api.data.mutable.OnInvPrimaryClickData;
 import io.github.rednesto.fileinventories.api.data.mutable.OnInvSecondaryClickData;
 import io.github.rednesto.fileinventories.api.serialization.InventoryDefinition;
 import io.github.rednesto.fileinventories.api.serialization.ItemDefinition;
@@ -53,7 +53,6 @@ import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.property.InventoryDimension;
 import org.spongepowered.api.item.inventory.property.SlotPos;
 import org.spongepowered.api.item.inventory.query.QueryOperationTypes;
-import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.serializer.TextSerializers;
 
 import java.io.IOException;
@@ -233,7 +232,7 @@ public class FileInventoriesServiceImpl implements FileInventoriesService {
             result.offer(Keys.ITEM_ENCHANTMENTS, definition.enchantments.stream()
                     .map(enchantment -> {
                         if (enchantment.type.isEmpty())
-                            throw new IllegalArgumentException("You must specify and ecnhantment id");
+                            throw new IllegalArgumentException("You must specify and enchantment id");
 
                         EnchantmentType enchantmentType = Sponge.getRegistry().getType(EnchantmentType.class, enchantment.type).orElseThrow(() ->
                                 new IllegalArgumentException("Unknown enchantment id: " + enchantment.type + ". Item id: " + id));
@@ -245,7 +244,7 @@ public class FileInventoriesServiceImpl implements FileInventoriesService {
         }
 
         if (!definition.lore.isEmpty())
-            result.offer(Keys.ITEM_LORE, definition.lore.stream().map(Text::of).collect(Collectors.toList()));
+            result.offer(Keys.ITEM_LORE, definition.lore.stream().map(TextSerializers.FORMATTING_CODE::deserialize).collect(Collectors.toList()));
 
         if (definition.durability > 0)
             result.offer(Keys.ITEM_DURABILITY, definition.durability);

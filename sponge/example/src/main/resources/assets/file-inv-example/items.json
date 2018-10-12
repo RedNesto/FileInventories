@@ -11,11 +11,11 @@
       }
     ],
     "lore": [
-      "Hello,",
+      "&5Hello,",
       "",
-      "I'm a",
+      "&6I&7'&6m &aa",
       "",
-      "Test Item"
+      "&dTest &eItem"
     ],
     "hide_attribute": true,
     "on_interact_secondary_click": "test_item_onsecondaryinteract",

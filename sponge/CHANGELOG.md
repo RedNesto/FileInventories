@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+- added color codes support for `lore`
+
 ## 0.3.0
 
 - `openInventory` now returns an `Optional<Inventory>`

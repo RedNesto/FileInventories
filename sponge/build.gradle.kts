@@ -5,7 +5,7 @@ plugins {
 version = extra["pluginVersion"] as String
 
 dependencies {
-    compile("org.spongepowered:spongeapi:7.1.0-SNAPSHOT")
+    compile("org.spongepowered:spongeapi:7.1.0")
 }
 
 sponge.plugin.id = extra["pluginId"] as String
