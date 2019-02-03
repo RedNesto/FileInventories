@@ -24,22 +24,11 @@
 package io.github.rednesto.fileinventories;
 
 import com.google.inject.Inject;
+import io.github.rednesto.fileinventories.api.FileInvKeys;
 import io.github.rednesto.fileinventories.api.FileInventoriesService;
-import io.github.rednesto.fileinventories.api.data.builder.OnInteractPrimaryClickDataManipulatorBuilder;
-import io.github.rednesto.fileinventories.api.data.builder.OnInteractSecondaryClickDataManipulatorBuilder;
-import io.github.rednesto.fileinventories.api.data.builder.OnInvPrimaryClickDataManipulatorBuilder;
-import io.github.rednesto.fileinventories.api.data.builder.OnInvMiddleClickDataManipulatorBuilder;
-import io.github.rednesto.fileinventories.api.data.builder.OnInvSecondaryClickDataManipulatorBuilder;
-import io.github.rednesto.fileinventories.api.data.immutable.ImmutableOnInteractPrimaryClickData;
-import io.github.rednesto.fileinventories.api.data.immutable.ImmutableOnInteractSecondaryClickData;
-import io.github.rednesto.fileinventories.api.data.immutable.ImmutableOnInvPrimaryClickData;
-import io.github.rednesto.fileinventories.api.data.immutable.ImmutableOnInvMiddleClickData;
-import io.github.rednesto.fileinventories.api.data.immutable.ImmutableOnInvSecondaryClickData;
-import io.github.rednesto.fileinventories.api.data.mutable.OnInteractPrimaryClickData;
-import io.github.rednesto.fileinventories.api.data.mutable.OnInteractSecondaryClickData;
-import io.github.rednesto.fileinventories.api.data.mutable.OnInvPrimaryClickData;
-import io.github.rednesto.fileinventories.api.data.mutable.OnInvMiddleClickData;
-import io.github.rednesto.fileinventories.api.data.mutable.OnInvSecondaryClickData;
+import io.github.rednesto.fileinventories.api.data.builder.*;
+import io.github.rednesto.fileinventories.api.data.immutable.*;
+import io.github.rednesto.fileinventories.api.data.mutable.*;
 import io.github.rednesto.fileinventories.impl.FileInventoriesServiceImpl;
 import org.slf4j.Logger;
 import org.spongepowered.api.Sponge;
@@ -116,6 +105,10 @@ public class FileInventories {
                 .manipulatorId("on_inv_middle_click")
                 .dataName("OnInvMiddleClick")
                 .buildAndRegister(container);
+
+        // A way to create Keys while the plugin instance is in the current cause.
+        // Players with file items in their inventory are kicked on join otherwise.
+        FileInvKeys.ON_INTERACT_PRIMARY_CLICK.getId();
     }
 
     public static FileInventories getInstance() {
