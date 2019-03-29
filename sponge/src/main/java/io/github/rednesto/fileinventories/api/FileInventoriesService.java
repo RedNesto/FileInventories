@@ -35,6 +35,8 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 /**
  * The service used to interact with File Inventories.
  */
@@ -90,11 +92,11 @@ public interface FileInventoriesService {
      * Generates the item bound to the given ID, and returns it.
      *
      * @param id the ID of the wanted file item.
-     * @param player the player the generated item is destined to.
+     * @param player the player the generated item is destined to. May be null.
      *
      * @return an Optional containing the item, or {@link Optional#empty()} if the ID has not been found.
      */
-    Optional<ItemStack> getItem(String id, Player player);
+    Optional<ItemStack> getItem(String id, @Nullable Player player);
 
     /**
      * Offers the itemstack generated via {@link #getItem(String, Player)} and offers it to the given Player.
@@ -172,7 +174,7 @@ public interface FileInventoriesService {
      * Registers the handler bound to the given handler ID. When the item is created.
      *
      * @param id the ID of the target handler.
-     * @param handler the Handler bound to the ID.
+     * @param handler the Handler bound to the ID. The {@link Player} may be null.
      */
     void registerCreateHandler(String id, BiConsumer<Player, ItemStack> handler);
 

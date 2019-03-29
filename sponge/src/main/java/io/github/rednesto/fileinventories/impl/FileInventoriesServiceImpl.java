@@ -27,11 +27,7 @@ import com.google.common.reflect.TypeToken;
 import io.github.rednesto.fileinventories.FileInventories;
 import io.github.rednesto.fileinventories.api.FileInvKeys;
 import io.github.rednesto.fileinventories.api.FileInventoriesService;
-import io.github.rednesto.fileinventories.api.data.mutable.OnInteractPrimaryClickData;
-import io.github.rednesto.fileinventories.api.data.mutable.OnInteractSecondaryClickData;
-import io.github.rednesto.fileinventories.api.data.mutable.OnInvMiddleClickData;
-import io.github.rednesto.fileinventories.api.data.mutable.OnInvPrimaryClickData;
-import io.github.rednesto.fileinventories.api.data.mutable.OnInvSecondaryClickData;
+import io.github.rednesto.fileinventories.api.data.mutable.*;
 import io.github.rednesto.fileinventories.api.serialization.InventoryDefinition;
 import io.github.rednesto.fileinventories.api.serialization.ItemDefinition;
 import ninja.leaping.configurate.ConfigurationNode;
@@ -58,15 +54,12 @@ import org.spongepowered.api.text.serializer.TextSerializers;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
 
 public class FileInventoriesServiceImpl implements FileInventoriesService {
 
@@ -187,7 +180,7 @@ public class FileInventoriesServiceImpl implements FileInventoriesService {
     }
 
     @Override
-    public Optional<ItemStack> getItem(String id, Player player) {
+    public Optional<ItemStack> getItem(String id, @Nullable Player player) {
         ItemDefinition definition = this.items.get(id);
         if (definition == null)
             return Optional.empty();
