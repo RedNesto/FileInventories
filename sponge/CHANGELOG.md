@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.2
+          
+- fixed players being kicked when joining if they have file items in their inventory
+
 ## 0.3.1
 
 - added color codes support for `lore`
